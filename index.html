@@ -5,7 +5,8 @@
   <title>ATTS TEST–01</title>
   <style>
     body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; }
-    header { background:#222; color:#fff; padding:10px; text-align:center; }
+    header { background:#222; color:#fff; padding:10px; text-align:center; position:relative; }
+    .marking-box { position:absolute; right:10px; top:10px; background:#fff; color:#000; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.4; border:1px solid #ccc; }
     .container { max-width:900px; margin:20px auto; background:#fff; padding:20px; border-radius:10px; }
     .upload-section { text-align:center; }
     #startTestBtn { background:#007bff; color:#fff; padding:10px 20px; border:none; border-radius:8px; margin-top:15px; cursor:pointer; }
@@ -47,7 +48,14 @@
   </style>
 </head>
 <body>
-  <header><h2>ATTS TEST–01</h2></header>
+  <header>
+    <h2>ATTS TEST–01</h2>
+    <div class="marking-box">
+      <b>Marking Scheme</b><br>
+      ✔ If Correct: +4 Marks<br>
+      ❌ If Wrong: –1 Mark
+    </div>
+  </header>
   <div class="container">
     <div class="upload-section">
       <button id="startTestBtn">Start Test</button>
@@ -197,7 +205,26 @@
       });
       let wrong=attempted-correct;
       let unattempt=questions.length-attempted;
-      let perc=Math.round((correct/questions.length)*100);
+      let marks=(correct*4)-(wrong*1);
+      let perc=Math.round((marks/(questions.length*4))*100);
+
+      // 🔥 Rank Predictor (simple demo)
+      let predictedRank;
+      if(perc>=85) predictedRank="Top 1000";
+      else if(perc>=70) predictedRank="Top 5000";
+      else if(perc>=50) predictedRank="Top 20,000";
+      else predictedRank="Above 50,000";
+
+      // 🔥 Positive Message
+      let message="";
+      if(perc<50){
+        message="Koi baat nahi yaar 🙌 Next time aur better karoge 💪";
+      } else if(perc<85){
+        message="Good attempt 👍 Bas thodi aur mehnat aur tum top pe hoge 🚀";
+      } else {
+        message="Excellent 🌟 Tumhari mehnat clearly dikh rahi hai, keep it up 🔥";
+      }
+
       resultBox.innerHTML=`
         <div id="scoreBox">
           <h2>Test Submitted ✅</h2>
@@ -206,7 +233,10 @@
           <p>Correct: ${correct}</p>
           <p>Wrong: ${wrong}</p>
           <p>Unattempted: ${unattempt}</p>
+          <p><b>Total Marks: ${marks}</b></p>
           <p>Percentage: ${perc}%</p>
+          <p><b>Predicted Rank: ${predictedRank}</b></p>
+          <p style="color:#007bff; font-weight:bold;">${message}</p>
         </div>
       `;
       viewScoreBtn.style.display="block";
