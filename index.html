@@ -21,6 +21,8 @@
     .correct { border:2px solid green !important; }
     .wrong { border:2px solid red !important; }
     .answer-info { margin-top:8px; font-size:14px; font-style:italic; }
+    .answer-correct { color:green; font-weight:bold; }
+    .answer-chosen { color:#007bff; font-weight:bold; }
 
     /* Popup modal */
     .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; justify-content:center; align-items:center; }
@@ -207,6 +209,7 @@
       showScoreQ(scoreQ);
     });
 
+    // View Answers with Correct + Your Choice
     function showScoreQ(i){
       let q=questions[i];
       let corr=answerKey[i+1]||null;
@@ -226,8 +229,8 @@
               return `<label class="${cls}">Option ${o}</label>`;
             }).join("")}
           </div>
-          ${corr?`<div class="answer-info">Correct Answer: ${corr}</div>`:""}
-          ${chosen?`<div class="answer-info">You Choose: ${chosen}</div>`:""}
+          ${corr?`<div class="answer-info answer-correct">Correct Answer: ${corr}</div>`:""}
+          ${chosen?`<div class="answer-info answer-chosen">You Choose: ${chosen}</div>`:""}
         </div>
         <div class="nav-buttons">
           <button onclick="prevScoreQ()">Previous</button>
