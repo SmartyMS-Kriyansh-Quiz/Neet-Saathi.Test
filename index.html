@@ -14,13 +14,25 @@
     .options label { display:block; padding:8px; margin:5px 0; border:2px solid #ccc; border-radius:8px; cursor:pointer; }
     .options input { margin-right:8px; }
     .nav-buttons { display:flex; justify-content:space-between; margin-top:15px; }
-    button { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; }
+    button { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
     .submit-btn { background:#28a745; color:white; width:100%; margin-top:20px; display:none; }
     .view-score-btn { display:none; background:#28a745; color:white; padding:15px 25px; border-radius:8px; cursor:pointer; text-align:center; margin:20px auto; font-size:18px; font-weight:bold; }
     .close-btn { background:#dc3545; color:white; width:100%; margin-top:20px; padding:12px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; display:none; }
-    .correct { border:2px solid green !important; }
-    .wrong { border:2px solid red !important; }
-    .answer-info { margin-top:8px; font-size:14px; font-style:italic; }
+
+    /* Review Mode Colors */
+    .correct { background:#d4edda; border:2px solid green !important; }
+    .wrong { background:#f8d7da; border:2px solid red !important; }
+
+    /* Answer Info */
+    .answer-info { margin-top:8px; font-size:14px; }
+    .answer-info .correct-text { color:green; font-weight:bold; }
+    .answer-info .wrong-text { color:blue; font-weight:bold; }
+
+    /* Buttons Color */
+    .btn-yellow { background:#fff3cd; color:#000; border:1px solid #ffc107; }
+    .btn-red { background:#f8d7da; color:#000; border:1px solid #dc3545; }
+    .btn-green { background:#d4edda; color:#000; border:1px solid #28a745; }
+    .btn-blue { background:#d1ecf1; color:#000; border:1px solid #17a2b8; }
 
     /* Popup modal */
     .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; justify-content:center; align-items:center; }
@@ -152,10 +164,10 @@
           </div>
         </div>
         <div class="nav-buttons">
-          <button onclick="prevQ()">Previous</button>
-          <button onclick="flagQ()">Flag for Review</button>
-          <button onclick="skipQ()">Skip</button>
-          <button onclick="nextQ()">Next</button>
+          <button class="btn-yellow" onclick="prevQ()">Previous</button>
+          <button class="btn-red" onclick="flagQ()">Flag for Review</button>
+          <button class="btn-blue" onclick="skipQ()">Skip</button>
+          <button class="btn-green" onclick="nextQ()">Next</button>
         </div>
       `;
       document.querySelectorAll(`input[name="q${i}"]`).forEach(r=>{
@@ -226,13 +238,14 @@
               return `<label class="${cls}">Option ${o}</label>`;
             }).join("")}
           </div>
-          ${corr?`<div class="answer-info">Correct Answer: ${corr}</div>`:""}
-          ${chosen?`<div class="answer-info">You Choose: ${chosen}</div>`:""}
+          ${corr?`<div class="answer-info"><span class="correct-text">✔ Correct Answer: ${corr}</span></div>`:""}
+          ${chosen?`<div class="answer-info"><span class="wrong-text">✎ You Choose: ${chosen}</span></div>`:""}
         </div>
         <div class="nav-buttons">
-          <button onclick="prevScoreQ()">Previous</button>
-          <button onclick="flagQ()">Flag for Review</button>
-          <button onclick="nextScoreQ()">Next</button>
+          <button class="btn-yellow" onclick="prevScoreQ()">Previous</button>
+          <button class="btn-red" onclick="flagQ()">Flag for Review</button>
+          <button class="btn-green" onclick="nextScoreQ()">Next</button>
+          <button class="btn-blue" onclick="skipQ()">Skip</button>
         </div>
       `;
     }
