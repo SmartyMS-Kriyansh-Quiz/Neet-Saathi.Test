@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ATTS TEST–01</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; }
+    header { background:#222; color:#fff; padding:10px; text-align:center; }
+    .container { max-width:900px; margin:20px auto; background:#fff; padding:20px; border-radius:10px; }
+    #timer { font-weight:bold; color:red; text-align:center; margin:10px 0; }
+    .question-img { max-width:100%; border:1px solid #ccc; margin-bottom:10px; }
+    .options label { display:block; padding:8px; margin:5px 0; border:2px solid #ccc; border-radius:8px; cursor:pointer; }
+    .options input { margin-right:8px; }
+    .nav-buttons { display:flex; justify-content:space-between; margin-top:15px; }
+    button { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; }
+    .submit-btn { background:#28a745; color:white; width:100%; margin-top:20px; display:none; }
+    .view-score-btn { display:none; background:#28a745; color:white; padding:15px 25px; border-radius:8px; cursor:pointer; text-align:center; margin:20px auto; font-size:18px; font-weight:bold; }
+    .close-btn { background:#dc3545; color:white; width:100%; margin-top:20px; padding:12px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; display:none; }
+    .correct { border:2px solid green !important; }
+    .wrong { border:2px solid red !important; }
+    .answer-info { margin-top:8px; font-size:14px; font-style:italic; }
+  </style>
+</head>
+<body>
+  <header><h2>ATTS TEST–01</h2></header>
+  <div class="container">
+    <div id="timer"></div>
+    <div id="quiz" style="display:none;"></div>
+    <button class="submit-btn" id="submitBtn">Submit Test</button>
+    <div id="resultBox"></div>
+    <div id="viewScoreBtn" class="view-score-btn">View Score</div>
+    <button id="closeBtn" class="close-btn">Close Test</button>
+  </div>
+
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js";
+
+    const quizDiv=document.getElementById("quiz");
+    const timerDiv=document.getElementById("timer");
+    const submitBtn=document.getElementById("submitBtn");
+    const viewScoreBtn=document.getElementById("viewScoreBtn");
+    const resultBox=document.getElementById("resultBox");
+    const closeBtn=document.getElementById("closeBtn");
+
+    let timer,timeLeft=7200;
+    let answers={}, currentQ=0, scoreQ=0;
+    let questions=[], answerKey={};
+    let inViewScore=false;
+
+    // Load fixed test.pdf automatically
+    window.addEventListener("load", async ()=>{
+      let pdf=await pdfjsLib.getDocument("test.pdf").promise;
+      let total=pdf.numPages;
+      questions=[];
+      // Extract answer key (last page text)
+      let lastPage=await pdf.getPage(total);
+      let txtContent=await lastPage.getTextContent();
+      let txt=txtContent.items.map(i=>i.str).join(" ");
+      txt.split(/\s+/).forEach(w=>{
+        let m=w.match(/Q(\d+):([A-D])/i);
+        if(m){ answerKey[parseInt(m[1])]=m[2].toUpperCase(); }
+      });
+      // Convert all pages except last to images
+      for(let i=1;i<total;i++){
+        if(i===total) break;
+        let page=await pdf.getPage(i);
+        let viewport=page.getViewport({scale:1.2});
+        let canvas=document.createElement("canvas");
+        let ctx=canvas.getContext("2d");
+        canvas.width=viewport.width; canvas.height=viewport.height;
+        await page.render({canvasContext:ctx,viewport}).promise;
+        let img=canvas.toDataURL("image/png");
+        questions.push({id:i, image:img});
+      }
+      // Start test
+      quizDiv.style.display="block"; submitBtn.style.display="block";
+      loadQuestion(0); startTimer();
+    });
+
+    function startTimer(){
+      timer=setInterval(()=>{
+        if(timeLeft<=0){clearInterval(timer);submitTest();}
+        let h=String(Math.floor(timeLeft/3600)).padStart(2,"0");
+        let m=String(Math.floor((timeLeft%3600)/60)).padStart(2,"0");
+        let s=String(timeLeft%60).padStart(2,"0");
+        timerDiv.textContent=`Test End in: ${h}H:${m}M:${s}S`;
+        timeLeft--;
+      },1000);
+    }
+
+    function loadQuestion(i){
+      currentQ=i;
+      let q=questions[i];
+      let opts=["A","B","C","D"];
+      quizDiv.innerHTML=`
+        <div class="question">
+          <img src="${q.image}" class="question-img">
+          <div class="options">
+            ${opts.map(o=>`<label><input type="radio" name="q${i}" value="${o}" ${answers[i]==o?"checked":""}> Option ${o}</label>`).join("")}
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button onclick="prevQ()">Previous</button>
+          <button onclick="flagQ()">Flag for Review</button>
+          <button onclick="skipQ()">Skip</button>
+          <button onclick="nextQ()">Next</button>
+        </div>
+      `;
+      document.querySelectorAll(`input[name="q${i}"]`).forEach(r=>{
+        r.addEventListener("change",e=>{answers[i]=e.target.value;});
+      });
+    }
+
+    function nextQ(){ if(currentQ<questions.length-1) loadQuestion(currentQ+1);}
+    function prevQ(){ if(currentQ>0) loadQuestion(currentQ-1);}
+    function flagQ(){ alert("Flagged for review"); }
+    function skipQ(){ nextQ(); }
+
+    submitBtn.addEventListener("click", submitTest);
+    function submitTest(){
+      clearInterval(timer);
+      quizDiv.style.display="none"; submitBtn.style.display="none";
+      let attempted=Object.keys(answers).length;
+      let correct=0;
+      Object.keys(answers).forEach(i=>{
+        if(answers[i]==answerKey[parseInt(i)+1]) correct++;
+      });
+      let wrong=attempted-correct;
+      let unattempt=questions.length-attempted;
+      let perc=Math.round((correct/questions.length)*100);
+      resultBox.innerHTML=`
+        <div id="scoreBox">
+          <h2>Test Submitted ✅</h2>
+          <p>Total Questions: ${questions.length}</p>
+          <p>Attempted: ${attempted}</p>
+          <p>Correct: ${correct}</p>
+          <p>Wrong: ${wrong}</p>
+          <p>Unattempted: ${unattempt}</p>
+          <p>Percentage: ${perc}%</p>
+        </div>
+      `;
+      viewScoreBtn.style.display="block";
+    }
+
+    viewScoreBtn.addEventListener("click",()=>{
+      inViewScore=true; scoreQ=0;
+      resultBox.style.display="none"; viewScoreBtn.style.display="none";
+      closeBtn.style.display="block";
+      showScoreQ(scoreQ);
+    });
+
+    function showScoreQ(i){
+      let q=questions[i];
+      let corr=answerKey[i+1]||null;
+      let chosen=answers[i]||null;
+      let opts=["A","B","C","D"];
+      quizDiv.style.display="block";
+      quizDiv.innerHTML=`
+        <div class="question">
+          <img src="${q.image}" class="question-img">
+          <div class="options">
+            ${opts.map(o=>{
+              let cls="";
+              if(corr){
+                if(o==corr) cls="correct";
+                if(chosen==o && chosen!=corr) cls="wrong";
+              }
+              return `<label class="${cls}">Option ${o}</label>`;
+            }).join("")}
+          </div>
+          ${corr?`<div class="answer-info">Correct Answer: ${corr}</div>`:""}
+          ${chosen?`<div class="answer-info">You Choose: ${chosen}</div>`:""}
+        </div>
+        <div class="nav-buttons">
+          <button onclick="prevScoreQ()">Previous</button>
+          <button onclick="flagQ()">Flag for Review</button>
+          <button onclick="nextScoreQ()">Next</button>
+        </div>
+      `;
+    }
+
+    function nextScoreQ(){ if(scoreQ<questions.length-1) showScoreQ(++scoreQ);}
+    function prevScoreQ(){ if(scoreQ>0) showScoreQ(--scoreQ);}
+
+    closeBtn.addEventListener("click",()=>{
+      quizDiv.style.display="none";
+      closeBtn.style.display="none";
+      resultBox.style.display="block";
+    });
+  </script>
+</body>
+</html>
