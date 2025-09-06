@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ATTS TEST–01</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; }
+    header { background:#222; color:#fff; padding:10px; text-align:center; font-size:20px; }
+    #quiz { margin:20px; text-align:center; }
+    #quiz img { max-width:90%; border:2px solid #ccc; border-radius:8px; margin:10px 0; }
+    #timer { font-size:18px; font-weight:bold; margin:10px; text-align:center; }
+    button { padding:10px 15px; margin:5px; border:none; border-radius:6px; cursor:pointer; }
+    #submitBtn { background:#28a745; color:white; }
+    #viewScoreBtn { background:#007bff; color:white; }
+    #resultBox { display:none; background:#fff; padding:20px; margin:20px auto; max-width:500px;
+      border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.2); text-align:center; }
+    .option-btn { display:inline-block; padding:8px 12px; margin:4px; border:1px solid #ccc;
+      border-radius:5px; cursor:pointer; }
+    .correct { background:#28a745; color:white !important; }
+    .wrong { background:#dc3545; color:white !important; }
+  </style>
+</head>
+<body>
+  <header>ATTS TEST – 01</header>
+  <div id="timer">Time Left: 120:00</div>
+  <div style="text-align:center;">
+    <button id="startTestBtn">Start Test</button>
+  </div>
+  <div id="quiz"></div>
+  <div style="text-align:center;">
+    <button id="submitBtn">Submit</button>
+    <button id="viewScoreBtn">View Score</button>
+  </div>
+  <div id="resultBox">
+    <h2>Result</h2>
+    <p id="resultText"></p>
+    <button id="closeBtn">Close</button>
+  </div>
+
+  <!-- Modal -->
+  <div id="confirmModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+      background:rgba(0,0,0,0.6); justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:8px; text-align:center; max-width:400px;">
+      <p id="modalMsg"></p>
+      <div id="modalBtns"></div>
+    </div>
+  </div>
+
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js";
+
+    const startBtn = document.getElementById("startTestBtn");
+    const quizDiv = document.getElementById("quiz");
+    const timerDiv = document.getElementById("timer");
+    const submitBtn = document.getElementById("submitBtn");
+    const viewScoreBtn = document.getElementById("viewScoreBtn");
+    const resultBox = document.getElementById("resultBox");
+    const closeBtn = document.getElementById("closeBtn");
+
+    const modal = document.getElementById("confirmModal");
+    const modalMsg = document.getElementById("modalMsg");
+    const modalBtns = document.getElementById("modalBtns");
+
+    let timer, timeLeft = 7200;
+    let answers = {}, currentQ = 0, scoreQ = 0;
+    let questions = [], answerKey = {};
+    let inViewScore = false;
+
+    // Auto load fixed PDF
+    window.addEventListener("load", async () => {
+      let pdf = await pdfjsLib.getDocument("test.pdf").promise;
+      let total = pdf.numPages;
+      questions = [];
+
+      // ✅ Extract answer key from last page
+      let lastPage = await pdf.getPage(total);
+      let txtContent = await lastPage.getTextContent();
+      let txt = txtContent.items.map(i => i.str).join(" ");
+
+      // Format 1: Q1 (C) / Q1:C / Q1 - C
+      let regex1 = /Q\s*(\d+)\s*[\(\:\-\.\s]*\s*([A-Da-d])\s*[\)]?/gi;
+      let match;
+      while ((match = regex1.exec(txt)) !== null) {
+        answerKey[parseInt(match[1])] = match[2].toUpperCase();
+      }
+
+      // Format 2: Table type "Que. 1 2 3 ... Ans. A B C ..."
+      let qnums = [], qans = [];
+      let queMatch = txt.match(/Que\.\s*([\d\s]+)/i);
+      let ansMatch = txt.match(/Ans\.\s*([A-Da-d\s]+)/i);
+
+      if (queMatch && ansMatch) {
+        qnums = queMatch[1].trim().split(/\s+/).map(n => parseInt(n));
+        qans = ansMatch[1].trim().split(/\s+/).map(a => a.toUpperCase());
+        qnums.forEach((q, i) => { if (q && qans[i]) answerKey[q] = qans[i]; });
+      }
+
+      console.log("✅ Extracted Answer Key:", answerKey);
+
+      // Load all question pages except last page
+      for (let i = 1; i < total; i++) {
+        if (i === total) break;
+        let page = await pdf.getPage(i);
+        let viewport = page.getViewport({ scale: 1.2 });
+        let canvas = document.createElement("canvas");
+        let ctx = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        let img = canvas.toDataURL("image/png");
+        questions.push({ id: i, image: img });
+      }
+    });
+
+    // Start Test
+    startBtn.addEventListener("click", () => {
+      modal.style.display = "flex";
+      modalMsg.innerText = "Are you sure you want to start the test?";
+      modalBtns.innerHTML = `
+        <button onclick="confirmStart(true)">Yes</button>
+        <button onclick="confirmStart(false)">No</button>`;
+    });
+
+    window.confirmStart = function(ok) {
+      modal.style.display = "none";
+      if (ok) {
+        startBtn.style.display = "none";
+        loadQuiz();
+        startTimer();
+      }
+    };
+
+    function startTimer() {
+      timer = setInterval(() => {
+        timeLeft--;
+        let min = Math.floor(timeLeft / 60);
+        let sec = timeLeft % 60;
+        timerDiv.innerText = `Time Left: ${min}:${sec.toString().padStart(2, "0")}`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          submitTest();
+        }
+      }, 1000);
+    }
+
+    function loadQuiz() {
+      quizDiv.innerHTML = "";
+      questions.forEach((q, idx) => {
+        let div = document.createElement("div");
+        div.innerHTML = `
+          <h3>Q${idx + 1}</h3>
+          <img src="${q.image}">
+          <div>
+            ${["A","B","C","D"].map(opt =>
+              `<span class="option-btn" onclick="selectAns(${idx+1},'${opt}',this)">${opt}</span>`
+            ).join(" ")}
+          </div>`;
+        quizDiv.appendChild(div);
+      });
+    }
+
+    window.selectAns = function(qno, opt, el) {
+      answers[qno] = opt;
+      let parent = el.parentNode.querySelectorAll(".option-btn");
+      parent.forEach(b => b.classList.remove("selected"));
+      el.classList.add("selected");
+    };
+
+    submitBtn.addEventListener("click", () => {
+      modal.style.display = "flex";
+      modalMsg.innerText = "Are you sure you want to submit the test?";
+      modalBtns.innerHTML = `
+        <button onclick="confirmSubmit(true)">Yes</button>
+        <button onclick="confirmSubmit(false)">No</button>`;
+    });
+
+    window.confirmSubmit = function(ok) {
+      modal.style.display = "none";
+      if (ok) submitTest();
+    };
+
+    function submitTest() {
+      clearInterval(timer);
+      scoreQ = 0;
+      Object.keys(answerKey).forEach(q => {
+        if (answers[q] === answerKey[q]) scoreQ++;
+      });
+      resultBox.style.display = "block";
+      document.getElementById("resultText").innerText =
+        `You scored ${scoreQ} / ${Object.keys(answerKey).length}`;
+    }
+
+    viewScoreBtn.addEventListener("click", () => {
+      inViewScore = !inViewScore;
+      if (inViewScore) {
+        quizDiv.querySelectorAll("div").forEach((qdiv, idx) => {
+          let qno = idx + 1;
+          let rightAns = answerKey[qno];
+          let chosen = answers[qno];
+          let opts = qdiv.querySelectorAll(".option-btn");
+          opts.forEach(o => {
+            let txt = o.innerText;
+            o.classList.remove("correct","wrong");
+            if (txt === rightAns) o.classList.add("correct");
+            if (chosen && txt === chosen && chosen !== rightAns) o.classList.add("wrong");
+          });
+        });
+        viewScoreBtn.innerText = "Hide Score";
+      } else {
+        quizDiv.querySelectorAll(".option-btn").forEach(o => o.classList.remove("correct","wrong"));
+        viewScoreBtn.innerText = "View Score";
+      }
+    });
+
+    closeBtn.addEventListener("click", () => {
+      resultBox.style.display = "none";
+    });
+  </script>
+</body>
+</html>
