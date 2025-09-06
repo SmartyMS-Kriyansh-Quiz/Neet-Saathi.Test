@@ -103,13 +103,15 @@
       let pdf=await pdfjsLib.getDocument("test.pdf").promise;
       let total=pdf.numPages;
       questions=[];
+      // ✅ Extract Answer Key from last page
       let lastPage=await pdf.getPage(total);
       let txtContent=await lastPage.getTextContent();
       let txt=txtContent.items.map(i=>i.str).join(" ");
-      txt.split(/\s+/).forEach(w=>{
-        let m=w.match(/Q(\d+):([A-D])/i);
-        if(m){ answerKey[parseInt(m[1])]=m[2].toUpperCase(); }
+      let matches=[...txt.matchAll(/Q(\d+)\s*\((A|B|C|D)\)/gi)];
+      matches.forEach(m=>{
+        answerKey[parseInt(m[1])]=m[2].toUpperCase();
       });
+      // ✅ Load all question images (except last page)
       for(let i=1;i<total;i++){
         if(i===total) break;
         let page=await pdf.getPage(i);
