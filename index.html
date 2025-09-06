@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ATTS TEST–01</title>
+  <title>ATTSs TEST–01</title>
   <style>
     body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; }
     header { background:#222; color:#fff; padding:10px; text-align:center; position:relative; }
@@ -107,10 +107,11 @@
       let lastPage=await pdf.getPage(total);
       let txtContent=await lastPage.getTextContent();
       let txt=txtContent.items.map(i=>i.str).join(" ");
-      let matches=[...txt.matchAll(/Q(\d+)\s*\((A|B|C|D)\)/gi)];
-      matches.forEach(m=>{
-        answerKey[parseInt(m[1])]=m[2].toUpperCase();
-      });
+      let regex=/Q(\d+)\s*\((A|B|C|D)\)/gi;
+      let match;
+      while((match=regex.exec(txt))!==null){
+        answerKey[parseInt(match[1])]=match[2].toUpperCase();
+      }
       // ✅ Load all question images (except last page)
       for(let i=1;i<total;i++){
         if(i===total) break;
@@ -270,8 +271,8 @@
               return `<label class="${cls}">Option ${o}</label>`;
             }).join("")}
           </div>
-          ${corr?`<div class="answer-info"><span class=✔ Correct Answer: ${corr}</span></div>`:""}
-          ${chosen?`<div class="answer-info"><span class=✎ You Choose: ${chosen}</span></div>`:""}
+          ${corr?`<div class="answer-info"><span class="correct-text">✔ Correct Answer: ${corr}</span></div>`:""}
+          ${chosen?`<div class="answer-info"><span class="wrong-text">✎ You Choose: ${chosen}</span></div>`:""}
         </div>
         <div class="nav-buttons">
           <button class="btn-yellow" onclick="prevScoreQ()">Previous</button>
