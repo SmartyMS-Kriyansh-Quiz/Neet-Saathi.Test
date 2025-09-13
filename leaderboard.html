@@ -1,88 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>BIOLOGY DPP-02</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        h1 { text-align: center; }
-        .question { margin-bottom: 20px; }
-        .options button { margin: 5px 0; display: block; }
-        .details { margin-bottom: 20px; }
-        .actions { margin-top: 20px; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Leaderboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:20px; background:#f4f6f9; }
+    h1 { text-align:center; color:#333; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+    th { background:#007bff; color:#fff; }
+    tr:nth-child(even) { background:#f9f9f9; }
+    .btn { background:#007bff; color:#fff; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; display:block; margin:auto; margin-top:20px; font-weight:bold; }
+  </style>
 </head>
 <body>
-    <h1>BIOLOGY DPP-02</h1>
-    <p><strong>Total Questions: 20</strong></p>
-    <p><strong>Chapter:</strong> वंशागति और विविधता के सिद्धांत</p>
-    <p><strong>Marking Scheme:</strong> ✔ If Correct: +4 Marks | ❌ If Wrong: –1 Mark</p>
+  <h1>Leaderboard</h1>
+  <table id="leaderboardTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Student DOB</th>
+        <th>Marks</th>
+        <th>Percentage</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button class="btn" onclick="window.location.href='index.html'">Back to Test</button>
 
-    <div class="details">
-        <label>Name: <input type="text" id="name" /></label><br/><br/>
-        <label>DOB: <input type="date" id="dob" /></label><br/><br/>
-        <button onclick="saveDetails()">Save & Start</button>
-    </div>
-
-    <div id="questions"></div>
-
-    <div class="actions">
-        <button onclick="submitTest()">Submit Test</button>
-        <button onclick="window.location.href='leaderboard.html'">View Leaderboard</button>
-    </div>
-
-    <script>
-        const questionsDiv = document.getElementById('questions');
-
-        function saveDetails() {
-            const name = document.getElementById('name').value.trim();
-            const dob = document.getElementById('dob').value;
-            if (!name || !dob) {
-                alert("Please enter both Name and DOB.");
-                return;
-            }
-            localStorage.setItem('student_name', name);
-            localStorage.setItem('student_dob', dob);
-            loadQuestions();
-        }
-
-        function loadQuestions() {
-            fetch('answerkey.html')
-                .then(response => response.text())
-                .then(data => {
-                    let parser = new DOMParser();
-                    let doc = parser.parseFromString(data, 'text/html');
-                    const qs = doc.querySelectorAll('.answer-item');
-                    questionsDiv.innerHTML = "";
-                    qs.forEach((q, index) => {
-                        const questionText = q.querySelector('.question-text').textContent;
-                        const options = q.querySelectorAll('.option');
-                        let html = `<div class="question"><h3>Q${index+1}: ${questionText}</h3><div class="options">`;
-                        options.forEach((opt, i) => {
-                            html += `<button onclick="selectAnswer(${index}, '${opt.textContent.trim()}')">${opt.textContent.trim()}</button>`;
-                        });
-                        html += `</div></div>`;
-                        questionsDiv.innerHTML += html;
-                    });
-                    localStorage.setItem('answers', JSON.stringify(Array(qs.length).fill(null)));
-                });
-        }
-
-        function selectAnswer(qIndex, ans) {
-            let answers = JSON.parse(localStorage.getItem('answers'));
-            answers[qIndex] = ans;
-            localStorage.setItem('answers', JSON.stringify(answers));
-            alert(`Answer saved for Q${qIndex+1}`);
-        }
-
-        function submitTest() {
-            const answers = JSON.parse(localStorage.getItem('answers'));
-            if (answers.includes(null)) {
-                if (!confirm("Some questions are unanswered. Submit anyway?")) return;
-            }
-            window.location.href = 'leaderboard.html';
-        }
-    </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const tbody = document.querySelector("#leaderboardTable tbody");
+      const leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+      if (leaderboard.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4'>No records found</td></tr>";
+        return;
+      }
+      leaderboard.forEach(entry => {
+        let row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${entry.name}</td>
+          <td>${entry.dob}</td>
+          <td>${entry.marks}</td>
+          <td>${entry.percentage}%</td>
+        `;
+        tbody.appendChild(row);
+      });
+    });
+  </script>
 </body>
 </html>
