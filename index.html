@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BIOLOGY DPP-01</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; }
+    header { background:#222; color:#fff; padding:15px; text-align:center; position:relative; }
+    header h2 { margin:0; }
+    header h4 { margin:5px 0 0; font-weight:normal; color:#ffc107; }
+    .info-box { position:absolute; left:10px; top:10px; background:#fff; color:#000; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.4; border:1px solid #ccc; }
+    .marking-box { position:absolute; right:10px; top:10px; background:#fff; color:#000; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.4; border:1px solid #ccc; }
+    .container { max-width:900px; margin:20px auto; background:#fff; padding:20px; border-radius:10px; }
+    .upload-section, .entry-section { text-align:center; }
+    .entry-section input { padding:8px; width:80%; margin:8px 0; border:1px solid #ccc; border-radius:6px; }
+    .entry-section button { background:#28a745; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
+    #startTestBtn, #dobNextBtn, #saveStartBtn { background:#007bff; color:#fff; padding:10px 20px; border:none; border-radius:8px; margin-top:15px; cursor:pointer; }
+    #timer { font-weight:bold; color:red; text-align:center; margin:10px 0; }
+    .question-img { max-width:100%; border:1px solid #ccc; margin-bottom:10px; }
+    .options label { display:block; padding:8px; margin:5px 0; border:2px solid #ccc; border-radius:8px; cursor:pointer; }
+    .options input { margin-right:8px; }
+    .nav-buttons { display:flex; justify-content:space-between; margin-top:15px; }
+    button { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
+    .submit-btn { background:#28a745; color:white; width:100%; margin-top:20px; display:none; }
+    .view-score-btn, .view-answerkey-btn { display:none; background:#28a745; color:white; padding:15px 25px; border-radius:8px; cursor:pointer; text-align:center; margin:20px auto; font-size:18px; font-weight:bold; }
+    .close-btn { background:#dc3545; color:white; width:100%; margin-top:20px; padding:12px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; display:none; }
+    .btn-yellow { background:#fff3cd; color:#000; border:1px solid #ffc107; }
+    .btn-red { background:#f8d7da; color:#000; border:1px solid #dc3545; }
+    .btn-green { background:#d4edda; color:#000; border:1px solid #28a745; }
+    .btn-blue { background:#d1ecf1; color:#000; border:1px solid #17a2b8; }
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; justify-content:center; align-items:center; }
+    .modal-content { background:#fff; padding:20px; border-radius:10px; max-width:400px; width:90%; text-align:center; }
+    .modal-content h3 { margin-bottom:15px; }
+    .modal-buttons { display:flex; justify-content:space-around; margin-top:20px; }
+    .modal-buttons button { flex:1; margin:0 5px; padding:10px; border-radius:8px; font-weight:bold; }
+    .btn-cancel { background:#6c757d; color:#fff; }
+    .btn-confirm { background:#007bff; color:#fff; }
+    .btn-danger { background:#dc3545; color:#fff; }
+    .btn-success { background:#28a745; color:#fff; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="info-box">
+      <b>Total Questions: 20</b>
+    </div>
+    <h2>BIOLOGY DPP-01</h2>
+    <h4>Chapter: वंशागति और विविधता के सिद्धांत</h4>
+    <div class="marking-box">
+      <b>Marking Scheme</b><br>
+      ✔ If Correct: +4 Marks<br>
+      ❌ If Wrong: –1 Mark
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="entrySection" class="entry-section">
+      <input type="text" id="nameInput" placeholder="Enter Your Name">
+      <input type="date" id="dobInput" placeholder="Enter Date of Birth">
+      <button id="saveStartBtn">Save & Start</button><br>
+      <button id="dobNextBtn">Next</button>
+    </div>
+    <div id="startSection" class="upload-section">
+      <button id="startTestBtn">Start Test</button>
+    </div>
+    <div id="timer"></div>
+    <div id="quiz" style="display:none;"></div>
+    <button class="submit-btn" id="submitBtn">Submit Test</button>
+    <div id="resultBox"></div>
+    <div id="viewScoreBtn" class="view-score-btn">View Leaderboard</div>
+    <div id="viewAnswerkeyBtn" class="view-answerkey-btn">View Answer Key</div>
+    <button id="closeBtn" class="close-btn">Close Test</button>
+  </div>
+
+  <div id="confirmModal" class="modal">
+    <div class="modal-content">
+      <h3 id="modalMsg"></h3>
+      <div class="modal-buttons" id="modalBtns"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js";
+
+    const startBtn=document.getElementById("startTestBtn");
+    const saveStartBtn=document.getElementById("saveStartBtn");
+    const dobNextBtn=document.getElementById("dobNextBtn");
+    const nameInput=document.getElementById("nameInput");
+    const dobInput=document.getElementById("dobInput");
+    const entrySection=document.getElementById("entrySection");
+    const startSection=document.getElementById("startSection");
+    const quizDiv=document.getElementById("quiz");
+    const timerDiv=document.getElementById("timer");
+    const submitBtn=document.getElementById("submitBtn");
+    const viewScoreBtn=document.getElementById("viewScoreBtn");
+    const viewAnswerkeyBtn=document.getElementById("viewAnswerkeyBtn");
+    const resultBox=document.getElementById("resultBox");
+    const closeBtn=document.getElementById("closeBtn");
+
+    const modal=document.getElementById("confirmModal");
+    const modalMsg=document.getElementById("modalMsg");
+    const modalBtns=document.getElementById("modalBtns");
+
+    let timer, timeLeft=1200;
+    let answers={}, currentQ=0, scoreQ=0;
+    let questions=[], answerKey={};
+
+    let userName="", userDob="";
+
+    window.addEventListener("load", async ()=>{
+      let pdf=await pdfjsLib.getDocument("test.pdf").promise;
+      let total=pdf.numPages;
+      questions=[];
+      let lastPage=await pdf.getPage(total);
+      let txtContent=await lastPage.getTextContent();
+      let txt=txtContent.items.map(i=>i.str).join(" ");
+      let ansBlocks=[...txt.matchAll(/Ans\.\s*([A-D])/gi)];
+      ansBlocks.forEach((match, idx)=>{
+        answerKey[idx+1]=match[1].toUpperCase();
+      });
+      for(let i=1;i<total;i++){
+        if(i===total) break;
+        let page=await pdf.getPage(i);
+        let viewport=page.getViewport({scale:1.2});
+        let canvas=document.createElement("canvas");
+        let ctx=canvas.getContext("2d");
+        canvas.width=viewport.width;
+        canvas.height=viewport.height;
+        await page.render({canvasContext:ctx,viewport}).promise;
+        let img=canvas.toDataURL("image/png");
+        questions.push({id:i, image:img});
+      }
+    });
+
+    function showModal(msg, buttons){
+      modalMsg.innerHTML=msg;
+      modalBtns.innerHTML="";
+      buttons.forEach(btn=>{
+        let b=document.createElement("button");
+        b.textContent=btn.text;
+        b.className=btn.class;
+        b.onclick=()=>{ modal.style.display="none"; btn.action(); };
+        modalBtns.appendChild(b);
+      });
+      modal.style.display="flex";
+    }
+
+    startBtn.addEventListener("click",()=>{
+      startSection.style.display="none";
+      entrySection.style.display="block";
+      dobNextBtn.style.display="block";
+      saveStartBtn.style.display="none";
+    });
+
+    dobNextBtn.addEventListener("click",()=>{
+      if(nameInput.value.trim()==""){
+        alert("Please enter name!");
+        return;
+      }
+      userName=nameInput.value.trim();
+      dobNextBtn.style.display="none";
+      saveStartBtn.style.display="block";
+    });
+
+    saveStartBtn.addEventListener("click",()=>{
+      if(dobInput.value==""){
+        alert("Please enter date of birth!");
+        return;
+      }
+      userDob=dobInput.value;
+      entrySection.style.display="none";
+      quizDiv.style.display="block";
+      submitBtn.style.display="block";
+      loadQuestion(0);
+      startTimer();
+    });
+
+    function startTimer(){
+      timer=setInterval(()=>{
+        if(timeLeft<=0){clearInterval(timer);submitTest();}
+        let h=String(Math.floor(timeLeft/3600)).padStart(2,"0");
+        let m=String(Math.floor((timeLeft%3600)/60)).padStart(2,"0");
+        let s=String(timeLeft%60).padStart(2,"0");
+        timerDiv.textContent=`Test End in: ${h}H:${m}M:${s}S`;
+        timeLeft--;
+      },1000);
+    }
+
+    function loadQuestion(i){
+      currentQ=i;
+      let q=questions[i];
+      let opts=["A","B","C","D"];
+      quizDiv.innerHTML=`
+        <div class="question">
+          <img src="${q.image}" class="question-img">
+          <div class="options">
+            ${opts.map(o=>`<label><input type="radio" name="q${i}" value="${o}" ${answers[i]==o?"checked":""}> Option ${o}</label>`).join("")}
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-yellow" onclick="prevQ()">Previous</button>
+          <button class="btn-red" onclick="flagQ()">Flag for Review</button>
+          <button class="btn-blue" onclick="skipQ()">Skip</button>
+          <button class="btn-green" onclick="nextQ()">Next</button>
+        </div>
+      `;
+      document.querySelectorAll(`input[name="q${i}"]`).forEach(r=>{
+        r.addEventListener("change",e=>{answers[i]=e.target.value;});
+      });
+    }
+
+    function nextQ(){ if(currentQ<questions.length-1) loadQuestion(currentQ+1);}
+    function prevQ(){ if(currentQ>0) loadQuestion(currentQ-1);}
+    function flagQ(){ alert("Flagged for review"); }
+    function skipQ(){ nextQ(); }
+
+    submitBtn.addEventListener("click",()=>{
+      showModal("Are you Sure to Submit Your Test?🤨",[
+        {text:"Not Now", class:"btn-cancel", action:()=>{}},
+        {text:"Submit Test", class:"btn-danger", action:()=>submitTest()}
+      ]);
+    });
+
+    function submitTest(){
+      clearInterval(timer);
+      quizDiv.style.display="none";
+      submitBtn.style.display="none";
+      closeBtn.style.display="block";
+
+      let attempted=Object.keys(answers).length;
+      let correct=0;
+      Object.keys(answers).forEach(i=>{
+        if(answers[i]==answerKey[parseInt(i)+1]) correct++;
+      });
+      let wrong=attempted-correct;
+      let unattempt=questions.length-attempted;
+      let marks=(correct*4)-(wrong*1);
+      let perc=Math.round((marks/(questions.length*4))*100);
+
+      let predictedRank;
+      if(perc>=85) predictedRank="Top 1000";
+      else if(perc>=70) predictedRank="Top 5000";
+      else if(perc>=50) predictedRank="Top 20,000";
+      else predictedRank="Above 50,000";
+
+      let message="";
+      if(perc<50){
+        message="Koi baat nahi yaar 🙌 Next time aur better karoge 💪";
+      } else if(perc<85){
+        message="Good attempt 👍 Bas thodi aur mehnat aur tum top pe hoge 🚀";
+      } else {
+        message="Excellent 🌟 Tumhari mehnat clearly dikh rahi hai, keep it up 🔥";
+      }
+
+      resultBox.innerHTML=`
+        <div id="scoreBox">
+          <h2>Test Submitted ✅</h2>
+          <p>Total Questions: ${questions.length}</p>
+          <p>Attempted: ${attempted}</p>
+          <p>Correct: ${correct}</p>
+          <p>Wrong: ${wrong}</p>
+          <p>Unattempted: ${unattempt}</p>
+          <p><b>Total Marks: ${marks}</b></p>
+          <p>Percentage: ${perc}%</p>
+          <p><b>Predicted Rank: ${predictedRank}</b></p>
+          <p style="color:#007bff; font-weight:bold;">${message}</p>
+        </div>
+      `;
+
+      let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+      leaderboard.push({
+        name: userName || "Anonymous",
+        dob: userDob,
+        marks: marks,
+        percentage: perc,
+        date: new Date().toLocaleString()
+      });
+      localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+      viewScoreBtn.style.display="block";
+      viewAnswerkeyBtn.style.display="block";
+    }
+
+    viewScoreBtn.addEventListener("click",()=>{
+      window.location.href = "leaderboard.html";
+    });
+
+    viewAnswerkeyBtn.addEventListener("click",()=>{
+      window.location.href = "Answerkey.html";
+    });
+
+    closeBtn.addEventListener("click",()=>{
+      showModal("Are You Sure to Close this Test?🧐",[
+        {text:"Not Now", class:"btn-cancel", action:()=>{}},
+        {text:"Yes Close", class:"btn-danger", action:()=>{
+          quizDiv.style.display="none";
+          closeBtn.style.display="none";
+          resultBox.style.display="block";
+        }}
+      ]);
+    });
+  </script>
+</body>
+</html>
