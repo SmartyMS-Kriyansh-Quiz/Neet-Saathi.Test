@@ -1,138 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEET-Sathi Test</title>
+  <meta charset="UTF-8" />
+  <title>BIOLOGY DPP-02</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f7; }
-    .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
-    .timer-box { display: flex; justify-content: space-between; align-items: center; }
-    .marking { text-align: right; font-size: 14px; }
-    .question img { max-width: 100%; }
-    .btn { padding: 10px 20px; margin: 10px; border: none; background: #007bff; color: white; border-radius: 5px; cursor: pointer; }
-    .btn:hover { background: #0056b3; }
-    .result-box { text-align: center; margin-top: 20px; }
+    body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; }
+    header { background:#222; color:#fff; padding:15px; text-align:center; }
+    .info-box { text-align:center; margin:10px 0; }
+    .marking-box { text-align:center; background:#fff3cd; color:#000; padding:10px; border-radius:8px; margin-bottom:20px; }
+    .container { max-width:600px; margin:auto; background:#fff; padding:20px; border-radius:8px; }
+    .btn { padding:10px 20px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin:10px; }
+    .btn-start { background:#28a745; color:#fff; }
+    .btn-submit { background:#007bff; color:#fff; display:none; }
+    .btn-leaderboard { background:#17a2b8; color:#fff; display:none; }
+    .btn-close { background:#dc3545; color:#fff; display:none; }
+    .entry input { width:100%; padding:10px; margin:10px 0; border-radius:6px; border:1px solid #ccc; }
+    .entry button { width:100%; }
+    .question img { width:100%; border:1px solid #ccc; margin-bottom:10px; }
+    .options label { display:block; margin:5px 0; cursor:pointer; }
   </style>
 </head>
 <body>
+  <header>
+    <h1>BIOLOGY DPP-02</h1>
+    <div class="info-box"><b>Total Questions: 20</b></div>
+    <div class="marking-box">
+      ✔ If Correct: +4 Marks &nbsp; ❌ If Wrong: –1 Mark
+    </div>
+  </header>
 
-<div class="container" id="start-screen">
-  <h2>Welcome to NEET-Sathi Test</h2>
-  <p>Enter your details to start:</p>
-  <input type="text" id="name" placeholder="Enter Your Name" required><br><br>
-  <input type="text" id="roll" placeholder="Enter Roll Number" required><br><br>
-  <button class="btn" onclick="startTest()">Start Test</button>
-</div>
+  <div class="container">
+    <div id="entrySection" class="entry">
+      <input type="text" id="nameInput" placeholder="Enter Your Name">
+      <input type="date" id="dobInput" placeholder="Enter Your DOB">
+      <button id="saveStartBtn" class="btn btn-start">Save & Start</button>
+    </div>
 
-<div class="container" id="quiz-screen" style="display:none;">
-  <div class="timer-box">
-    <h3 id="timer">Time: 00:00</h3>
-    <div class="marking">
-      <strong>Marking Scheme</strong><br>
-      If Correct: +4 Marks<br>
-      If Wrong: –1 Mark
+    <div id="quizSection" style="display:none;">
+      <div id="questionArea" class="question"></div>
+      <button id="prevBtn" class="btn">Previous</button>
+      <button id="nextBtn" class="btn">Next</button>
+      <button id="submitBtn" class="btn btn-submit">Submit Test</button>
+      <button id="leaderboardBtn" class="btn btn-leaderboard">View Leaderboard</button>
+      <button id="closeBtn" class="btn btn-close">Close Test</button>
     </div>
   </div>
-  <hr>
 
-  <div id="questions"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script>
+    const nameInput = document.getElementById("nameInput");
+    const dobInput = document.getElementById("dobInput");
+    const saveStartBtn = document.getElementById("saveStartBtn");
+    const quizSection = document.getElementById("quizSection");
+    const entrySection = document.getElementById("entrySection");
+    const questionArea = document.getElementById("questionArea");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const leaderboardBtn = document.getElementById("leaderboardBtn");
+    const closeBtn = document.getElementById("closeBtn");
 
-  <button class="btn" onclick="submitTest()">Submit Test</button>
-</div>
+    let questions = [];
+    let currentQ = 0;
+    let userAnswers = {};
+    let answerKey = {};
 
-<div class="container" id="result-screen" style="display:none;">
-  <h2>Test Completed</h2>
-  <p id="score-display"></p>
-  <button class="btn" onclick="window.location.href='leaderboard.html'">View Leaderboard</button>
-</div>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js";
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
-<script>
-let questions = [];
-let currentIndex = 0;
-let correctAnswers = {};
-let userAnswers = {};
-let score = 0;
-let timerInterval;
-let timeLeft = 60 * 10; // 10 min default
-
-// Load questions from test.pdf
-async function loadPDF() {
-  const pdf = await pdfjsLib.getDocument('test.pdf').promise;
-  let textContent = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    let page = await pdf.getPage(i);
-    let text = await page.getTextContent();
-    text.items.forEach(item => textContent += item.str + '\n');
-  }
-  // Here you should parse textContent into questions
-  // Example: convert to array
-  questions = textContent.split('\n').filter(q => q.trim() !== '');
-  renderQuestions();
-}
-
-function renderQuestions() {
-  const container = document.getElementById('questions');
-  container.innerHTML = '';
-  questions.forEach((q, index) => {
-    container.innerHTML += `
-      <div class="question">
-        <p><b>Q${index+1}.</b> ${q}</p>
-        <input type="radio" name="q${index}" value="A"> A
-        <input type="radio" name="q${index}" value="B"> B
-        <input type="radio" name="q${index}" value="C"> C
-        <input type="radio" name="q${index}" value="D"> D
-      </div><hr>`;
-  });
-}
-
-function startTest() {
-  document.getElementById('start-screen').style.display = 'none';
-  document.getElementById('quiz-screen').style.display = 'block';
-  loadPDF();
-  startTimer();
-}
-
-function startTimer() {
-  timerInterval = setInterval(() => {
-    let minutes = Math.floor(timeLeft / 60);
-    let seconds = timeLeft % 60;
-    document.getElementById('timer').innerText = 
-      `Time: ${minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      submitTest();
+    async function loadAnswers() {
+      const pdf = await pdfjsLib.getDocument("test.pdf").promise;
+      const lastPage = await pdf.getPage(pdf.numPages);
+      const txtContent = await lastPage.getTextContent();
+      const txt = txtContent.items.map(i => i.str).join(" ");
+      const matches = [...txt.matchAll(/Ans\.\s*([A-D])/gi)];
+      matches.forEach((m, idx) => {
+        answerKey[idx+1] = m[1].toUpperCase();
+      });
+      localStorage.setItem("answerKey", JSON.stringify(answerKey));
     }
-    timeLeft--;
-  }, 1000);
-}
 
-function submitTest() {
-  clearInterval(timerInterval);
-  score = 0;
-  questions.forEach((q, index) => {
-    let selected = document.querySelector(`input[name=q${index}]:checked`);
-    if (selected) {
-      if (selected.value === 'A') { score += 4; } // You can adjust according to correct answer key
-      else { score -= 1; }
+    async function loadQuestions() {
+      const pdf = await pdfjsLib.getDocument("test.pdf").promise;
+      const total = pdf.numPages;
+      for (let i = 1; i < total; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({scale:1.2});
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({canvasContext: ctx, viewport}).promise;
+        const img = canvas.toDataURL("image/png");
+        questions.push(img);
+      }
     }
-  });
-  document.getElementById('quiz-screen').style.display = 'none';
-  document.getElementById('result-screen').style.display = 'block';
-  document.getElementById('score-display').innerText = 
-    `Your Score: ${score} Marks`;
-  saveToLeaderboard();
-}
 
-function saveToLeaderboard() {
-  let name = document.getElementById('name').value;
-  let roll = document.getElementById('roll').value;
-  let data = JSON.parse(localStorage.getItem('leaderboard') || '[]');
-  data.push({name, roll, score});
-  localStorage.setItem('leaderboard', JSON.stringify(data));
-}
-</script>
+    saveStartBtn.addEventListener("click", async () => {
+      if (!nameInput.value.trim() || !dobInput.value.trim()) {
+        alert("Enter all details!");
+        return;
+      }
+      localStorage.setItem("userName", nameInput.value.trim());
+      localStorage.setItem("userDob", dobInput.value.trim());
+      entrySection.style.display = "none";
+      quizSection.style.display = "block";
+      submitBtn.style.display = "block";
+      await loadAnswers();
+      await loadQuestions();
+      showQuestion(0);
+    });
 
+    function showQuestion(i) {
+      currentQ = i;
+      questionArea.innerHTML = `
+        <img src="${questions[i]}" alt="Question ${i+1}">
+        ${["A","B","C","D"].map(opt =>
+          `<label><input type="radio" name="q${i}" value="${opt}" ${userAnswers[i]==opt?'checked':''}> Option ${opt}</label>`).join("")}
+      `;
+    }
+
+    prevBtn.addEventListener("click", () => {
+      if (currentQ > 0) {
+        saveAnswer();
+        showQuestion(currentQ - 1);
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (currentQ < questions.length - 1) {
+        saveAnswer();
+        showQuestion(currentQ + 1);
+      }
+    });
+
+    function saveAnswer() {
+      const radios = document.getElementsByName(`q${currentQ}`);
+      for (let r of radios) {
+        if (r.checked) {
+          userAnswers[currentQ] = r.value;
+          break;
+        }
+      }
+    }
+
+    submitBtn.addEventListener("click", () => {
+      saveAnswer();
+      let correct = 0;
+      Object.keys(userAnswers).forEach(i => {
+        const qNum = parseInt(i) + 1;
+        if (userAnswers[i] === answerKey[qNum]) correct++;
+      });
+      const wrong = Object.keys(userAnswers).length - correct;
+      const unattempted = questions.length - Object.keys(userAnswers).length;
+      const marks = correct * 4 - wrong;
+      const percentage = Math.round((marks / (questions.length * 4)) * 100);
+
+      let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+      leaderboard.push({
+        name: localStorage.getItem("userName"),
+        dob: localStorage.getItem("userDob"),
+        marks: marks,
+        percentage: percentage
+      });
+      localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+
+      alert(`Test Submitted!\nCorrect: ${correct}\nWrong: ${wrong}\nUnattempted: ${unattempted}\nMarks: ${marks}\nPercentage: ${percentage}%`);
+      submitBtn.style.display = "none";
+      leaderboardBtn.style.display = "block";
+      closeBtn.style.display = "block";
+    });
+
+    leaderboardBtn.addEventListener("click", () => {
+      window.location.href = "leaderboard.html";
+    });
+
+    closeBtn.addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+  </script>
 </body>
 </html>
