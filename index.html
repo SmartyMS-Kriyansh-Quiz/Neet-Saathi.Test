@@ -3,252 +3,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEET Quiz Test</title>
+  <title>NEET-Sathi Test</title>
   <style>
-    body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; }
-    header { background:#222; color:#fff; padding:10px; display:flex; justify-content:space-between; align-items:center; }
-    #timer { font-weight:bold; color:#ffcc00; font-size:16px; }
-    #marking { text-align:right; font-size:14px; line-height:1.4; }
-    #marking b { color:#00e676; }
-    #marking .wrong { color:#ff1744; }
-
-    .container { max-width:900px; margin:20px auto; background:#fff; padding:20px; border-radius:10px; }
-    .upload-section { text-align:center; }
-    #startTestBtn { background:#007bff; color:#fff; padding:10px 20px; border:none; border-radius:8px; margin-top:15px; cursor:pointer; }
-    .question-img { max-width:100%; border:1px solid #ccc; margin-bottom:10px; }
-    .options label { display:block; padding:8px; margin:5px 0; border:2px solid #ccc; border-radius:8px; cursor:pointer; }
-    .options input { margin-right:8px; }
-
-    .nav-buttons { display:flex; justify-content:space-between; margin-top:15px; gap:10px; flex-wrap:wrap; }
-    button { padding:8px 15px; border:2px solid transparent; border-radius:6px; cursor:pointer; font-weight:bold; background:#fff; }
-    .btn-prev { border-color: gold; color:#444; }
-    .btn-flag { border-color: red; color:red; }
-    .btn-next { border-color: green; color:green; }
-    .btn-skip { border-color: blue; color:blue; }
-
-    .submit-btn { background:#28a745; color:white; width:100%; margin-top:20px; display:none; padding:12px; border-radius:8px; font-size:16px; font-weight:bold; }
-    .view-score-btn { display:none; background:#28a745; color:white; padding:15px 25px; border-radius:8px; cursor:pointer; text-align:center; margin:20px auto; font-size:18px; font-weight:bold; }
-    .close-btn { background:#dc3545; color:white; width:100%; margin-top:20px; padding:12px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; display:none; }
-
-    .correct { background:#d4edda; border-color:#28a745; }
-    .wrong { background:#f8d7da; border-color:#dc3545; }
-    .answer-info { margin-top:6px; font-weight:bold; }
-    .answer-correct { color:green; }
-    .answer-your { color:blue; }
-
-    /* Modal */
-    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; justify-content:center; align-items:center; }
-    .modal-content { background:#fff; padding:20px; border-radius:10px; max-width:400px; width:90%; text-align:center; }
-    .modal-content h3 { margin-bottom:15px; }
-    .modal-buttons { display:flex; justify-content:space-around; margin-top:20px; }
-    .modal-buttons button { flex:1; margin:0 5px; padding:10px; border-radius:8px; font-weight:bold; }
-    .btn-cancel { background:#6c757d; color:#fff; }
-    .btn-danger { background:#dc3545; color:#fff; }
-    .btn-success { background:#28a745; color:#fff; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f7; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+    .timer-box { display: flex; justify-content: space-between; align-items: center; }
+    .marking { text-align: right; font-size: 14px; }
+    .question img { max-width: 100%; }
+    .btn { padding: 10px 20px; margin: 10px; border: none; background: #007bff; color: white; border-radius: 5px; cursor: pointer; }
+    .btn:hover { background: #0056b3; }
+    .result-box { text-align: center; margin-top: 20px; }
   </style>
 </head>
 <body>
-  <header>
-    <div id="timer">Test End in: 02:00:00</div>
-    <div id="marking">
-      <b>Marking Scheme</b><br>
-      If Correct: <b>+4 Marks</b><br>
-      If Wrong: <span class="wrong">–1 Mark</span>
-    </div>
-  </header>
 
-  <div class="container">
-    <div class="upload-section">
-      <button id="startTestBtn">Start Test</button>
-    </div>
-    <div id="quiz" style="display:none;"></div>
-    <button class="submit-btn" id="submitBtn">Submit Test</button>
-    <div id="resultBox"></div>
-    <div id="viewScoreBtn" class="view-score-btn">View Score</div>
-    <button id="closeBtn" class="close-btn">Close Test</button>
-  </div>
+<div class="container" id="start-screen">
+  <h2>Welcome to NEET-Sathi Test</h2>
+  <p>Enter your details to start:</p>
+  <input type="text" id="name" placeholder="Enter Your Name" required><br><br>
+  <input type="text" id="roll" placeholder="Enter Roll Number" required><br><br>
+  <button class="btn" onclick="startTest()">Start Test</button>
+</div>
 
-  <!-- Modal -->
-  <div id="confirmModal" class="modal">
-    <div class="modal-content">
-      <h3 id="modalMsg"></h3>
-      <div class="modal-buttons" id="modalBtns"></div>
+<div class="container" id="quiz-screen" style="display:none;">
+  <div class="timer-box">
+    <h3 id="timer">Time: 00:00</h3>
+    <div class="marking">
+      <strong>Marking Scheme</strong><br>
+      If Correct: +4 Marks<br>
+      If Wrong: –1 Mark
     </div>
   </div>
+  <hr>
 
-  <script>
-    const startBtn=document.getElementById("startTestBtn");
-    const quizDiv=document.getElementById("quiz");
-    const timerDiv=document.getElementById("timer");
-    const submitBtn=document.getElementById("submitBtn");
-    const viewScoreBtn=document.getElementById("viewScoreBtn");
-    const resultBox=document.getElementById("resultBox");
-    const closeBtn=document.getElementById("closeBtn");
-    const modal=document.getElementById("confirmModal");
-    const modalMsg=document.getElementById("modalMsg");
-    const modalBtns=document.getElementById("modalBtns");
+  <div id="questions"></div>
 
-    let timer,timeLeft=7200; // 2 hours
-    let answers={}, currentQ=0, scoreQ=0;
-    // ✅ Replace these with real images of your questions
-    let questions=[
-      { image:"https://via.placeholder.com/500x200?text=Question+1" },
-      { image:"https://via.placeholder.com/500x200?text=Question+2" }
-    ];
-    // ✅ Correct answers
-    let answerKey={1:"A",2:"C"};
-    let inViewScore=false;
+  <button class="btn" onclick="submitTest()">Submit Test</button>
+</div>
 
-    function showModal(msg,buttons){
-      modalMsg.innerHTML=msg;
-      modalBtns.innerHTML="";
-      buttons.forEach(btn=>{
-        let b=document.createElement("button");
-        b.textContent=btn.text;
-        b.className=btn.class;
-        b.onclick=()=>{ modal.style.display="none"; btn.action(); };
-        modalBtns.appendChild(b);
-      });
-      modal.style.display="flex";
+<div class="container" id="result-screen" style="display:none;">
+  <h2>Test Completed</h2>
+  <p id="score-display"></p>
+  <button class="btn" onclick="window.location.href='leaderboard.html'">View Leaderboard</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+<script>
+let questions = [];
+let currentIndex = 0;
+let correctAnswers = {};
+let userAnswers = {};
+let score = 0;
+let timerInterval;
+let timeLeft = 60 * 10; // 10 min default
+
+// Load questions from test.pdf
+async function loadPDF() {
+  const pdf = await pdfjsLib.getDocument('test.pdf').promise;
+  let textContent = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    let page = await pdf.getPage(i);
+    let text = await page.getTextContent();
+    text.items.forEach(item => textContent += item.str + '\n');
+  }
+  // Here you should parse textContent into questions
+  // Example: convert to array
+  questions = textContent.split('\n').filter(q => q.trim() !== '');
+  renderQuestions();
+}
+
+function renderQuestions() {
+  const container = document.getElementById('questions');
+  container.innerHTML = '';
+  questions.forEach((q, index) => {
+    container.innerHTML += `
+      <div class="question">
+        <p><b>Q${index+1}.</b> ${q}</p>
+        <input type="radio" name="q${index}" value="A"> A
+        <input type="radio" name="q${index}" value="B"> B
+        <input type="radio" name="q${index}" value="C"> C
+        <input type="radio" name="q${index}" value="D"> D
+      </div><hr>`;
+  });
+}
+
+function startTest() {
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = 'block';
+  loadPDF();
+  startTimer();
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
+    document.getElementById('timer').innerText = 
+      `Time: ${minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      submitTest();
     }
+    timeLeft--;
+  }, 1000);
+}
 
-    startBtn.addEventListener("click",()=>{
-      showModal("Are you Sure to Start this Test🙂",[
-        {text:"Back", class:"btn-cancel", action:()=>{}},
-        {text:"Start Test", class:"btn-success", action:()=>{
-          document.querySelector(".upload-section").style.display="none";
-          quizDiv.style.display="block"; submitBtn.style.display="block";
-          loadQuestion(0); startTimer();
-        }}
-      ]);
-    });
-
-    function startTimer(){
-      timer=setInterval(()=>{
-        if(timeLeft<=0){clearInterval(timer);submitTest();}
-        let h=String(Math.floor(timeLeft/3600)).padStart(2,"0");
-        let m=String(Math.floor((timeLeft%3600)/60)).padStart(2,"0");
-        let s=String(timeLeft%60).padStart(2,"0");
-        timerDiv.textContent=`Test End in: ${h}H:${m}M:${s}S`;
-        timeLeft--;
-      },1000);
+function submitTest() {
+  clearInterval(timerInterval);
+  score = 0;
+  questions.forEach((q, index) => {
+    let selected = document.querySelector(`input[name=q${index}]:checked`);
+    if (selected) {
+      if (selected.value === 'A') { score += 4; } // You can adjust according to correct answer key
+      else { score -= 1; }
     }
+  });
+  document.getElementById('quiz-screen').style.display = 'none';
+  document.getElementById('result-screen').style.display = 'block';
+  document.getElementById('score-display').innerText = 
+    `Your Score: ${score} Marks`;
+  saveToLeaderboard();
+}
 
-    function loadQuestion(i){
-      currentQ=i;
-      let q=questions[i];
-      let opts=["A","B","C","D"];
-      quizDiv.innerHTML=`
-        <div class="question">
-          <img src="${q.image}" class="question-img">
-          <div class="options">
-            ${opts.map(o=>`<label><input type="radio" name="q${i}" value="${o}" ${answers[i]==o?"checked":""}> Option ${o}</label>`).join("")}
-          </div>
-        </div>
-        <div class="nav-buttons">
-          <button class="btn-prev" onclick="prevQ()">Previous</button>
-          <button class="btn-flag" onclick="flagQ()">Flag for Review</button>
-          <button class="btn-skip" onclick="skipQ()">Skip</button>
-          <button class="btn-next" onclick="nextQ()">Next</button>
-        </div>
-      `;
-      document.querySelectorAll(`input[name="q${i}"]`).forEach(r=>{
-        r.addEventListener("change",e=>{answers[i]=e.target.value;});
-      });
-    }
+function saveToLeaderboard() {
+  let name = document.getElementById('name').value;
+  let roll = document.getElementById('roll').value;
+  let data = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+  data.push({name, roll, score});
+  localStorage.setItem('leaderboard', JSON.stringify(data));
+}
+</script>
 
-    function nextQ(){ if(currentQ<questions.length-1) loadQuestion(currentQ+1);}
-    function prevQ(){ if(currentQ>0) loadQuestion(currentQ-1);}
-    function flagQ(){ alert("Flagged for review"); }
-    function skipQ(){ nextQ(); }
-
-    submitBtn.addEventListener("click",()=>{
-      showModal("Are you Sure to Submit Your Test?🤨",[
-        {text:"Not Now", class:"btn-cancel", action:()=>{}},
-        {text:"Submit Test", class:"btn-danger", action:()=>submitTest()}
-      ]);
-    });
-
-    function submitTest(){
-      clearInterval(timer);
-      quizDiv.style.display="none"; submitBtn.style.display="none";
-      let attempted=Object.keys(answers).length;
-      let correct=0, wrong=0, marks=0;
-      Object.keys(answers).forEach(i=>{
-        if(answers[i]==answerKey[parseInt(i)+1]){
-          correct++; marks+=4;
-        } else {
-          wrong++; marks-=1;
-        }
-      });
-      let unattempt=questions.length-attempted;
-      let perc=Math.round((marks/(questions.length*4))*100);
-      resultBox.innerHTML=`
-        <div id="scoreBox">
-          <h2>Test Submitted ✅</h2>
-          <p>Total Questions: ${questions.length}</p>
-          <p>Attempted: ${attempted}</p>
-          <p>Correct: ${correct} (+${correct*4} Marks)</p>
-          <p>Wrong: ${wrong} (–${wrong*1} Marks)</p>
-          <p>Unattempted: ${unattempt}</p>
-          <h3>Total Score: ${marks} / ${questions.length*4}</h3>
-          <p>Percentage: ${perc}%</p>
-        </div>
-      `;
-      viewScoreBtn.style.display="block";
-    }
-
-    viewScoreBtn.addEventListener("click",()=>{
-      inViewScore=true; scoreQ=0;
-      resultBox.style.display="none"; viewScoreBtn.style.display="none";
-      closeBtn.style.display="block";
-      showScoreQ(scoreQ);
-    });
-
-    function showScoreQ(i){
-      let q=questions[i];
-      let corr=answerKey[i+1]||null;
-      let chosen=answers[i]||null;
-      let opts=["A","B","C","D"];
-      quizDiv.style.display="block";
-      quizDiv.innerHTML=`
-        <div class="question">
-          <img src="${q.image}" class="question-img">
-          <div class="options">
-            ${opts.map(o=>{
-              let cls="";
-              if(corr){
-                if(o==corr) cls="correct";
-                if(chosen==o && chosen!=corr) cls="wrong";
-              }
-              return `<label class="${cls}">Option ${o}</label>`;
-            }).join("")}
-          </div>
-          ${corr?`<div class="answer-info answer-correct">✔ Correct Answer: ${corr}</div>`:""}
-          ${chosen?`<div class="answer-info answer-your">✎ You Choose: ${chosen}</div>`:""}
-        </div>
-        <div class="nav-buttons">
-          <button class="btn-prev" onclick="prevScoreQ()">Previous</button>
-          <button class="btn-flag" onclick="flagQ()">Flag for Review</button>
-          <button class="btn-next" onclick="nextScoreQ()">Next</button>
-          <button class="btn-skip" onclick="skipQ()">Skip</button>
-        </div>
-      `;
-    }
-
-    function nextScoreQ(){ if(scoreQ<questions.length-1) showScoreQ(++scoreQ);}
-    function prevScoreQ(){ if(scoreQ>0) showScoreQ(--scoreQ);}
-
-    closeBtn.addEventListener("click",()=>{
-      showModal("Are You Sure to Close this Test?🧐",[
-        {text:"Not Now", class:"btn-cancel", action:()=>{}},
-        {text:"Yes Close", class:"btn-danger", action:()=>{
-          quizDiv.style.display="none";
-          closeBtn.style.display="none";
-          resultBox.style.display="block";
-        }}
-      ]);
-    });
-  </script>
 </body>
 </html>
