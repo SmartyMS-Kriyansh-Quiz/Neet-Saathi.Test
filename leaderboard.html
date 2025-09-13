@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Leaderboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
+    h2 { text-align: center; color: #007bff; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #007bff; color: white; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .btn-back { background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; display: block; margin: 20px auto; font-weight: bold; }
+    .empty { text-align: center; color: #777; margin-top: 40px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h2>Leaderboard</h2>
+  <table id="leaderboardTable">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Name</th>
+        <th>Marks</th>
+        <th>Percentage</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboardBody"></tbody>
+  </table>
+  <div id="emptyMsg" class="empty">No records yet!</div>
+  <button class="btn-back" onclick="goBack()">Back to Test</button>
+
+  <script>
+    function goBack(){
+      window.location.href = "index.html";
+    }
+
+    window.onload = function(){
+      let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+      let tbody = document.getElementById("leaderboardBody");
+      let emptyMsg = document.getElementById("emptyMsg");
+
+      if(leaderboard.length === 0){
+        emptyMsg.style.display = "block";
+        return;
+      }
+      emptyMsg.style.display = "none";
+
+      leaderboard.sort((a,b)=>b.marks - a.marks);
+
+      leaderboard.forEach((entry, index)=>{
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index+1}</td>
+          <td>${entry.name || "Anonymous"}</td>
+          <td>${entry.marks}</td>
+          <td>${entry.percentage}%</td>
+          <td>${entry.date}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
